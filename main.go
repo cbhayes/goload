@@ -14,7 +14,9 @@
 
 package main
 
-import "github.com/conchuirh/goload/cmd"
+import (	
+	"github.com/conchuirh/goload/cmd"
+)
 
 func main() {
 	cmd.Execute()

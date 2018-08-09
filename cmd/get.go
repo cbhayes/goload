@@ -18,7 +18,9 @@ import (
 	"fmt"
 	"net/http"
 	"io/ioutil"
+	"time"
 
+	"github.com/conchuirh/goload/measure"
 	"github.com/spf13/cobra"
 )
 
@@ -40,16 +42,13 @@ will send 2000 GET requests each for 10 clients to http://example.com/path`,
 
 		fmt.Printf("Starting %d requests for %d clients to %s \n", *numRequests, *numClients, urlString)
 
-		for i := 0; i < *numRequests; i++ {
-			status := make(chan int)
-			fmt.Printf("Starting request %d :\n", i)
-			for j := 0; j < *numClients; j++ {
-				go sendRequest(urlString, nil, status)
-			}
+		c := make(chan measure.Measure)
+		for client := 0; client < *numClients; client++ {
+			go createClient(client, *numRequests, urlString, c)
+		}
 
-			for j := 0; j < *numClients; j++ {
-				fmt.Printf("Client %d Status %d\n", j, <-status)
-			}
+		for i := *numRequests * *numClients; i > 0; i-- {
+			<-c				
 		}
 	},
 }
@@ -62,7 +61,17 @@ func init() {
 	numClients = getCmd.Flags().IntP("numClients",  "c",1, "Number of clients to send from")
 }
 
-func sendRequest(url string, template []byte, c chan int) {
+func createClient(client int, numReq int, url string, c chan measure.Measure) {
+	for req := 0; req < numReq; req++ {
+		m := sendRequest(url, nil)
+		fmt.Printf("Client %d Request #%d Duration %s\n", client, req, m.Elapsed.String())
+		c <- m
+	}
+	return
+}
+
+func sendRequest(url string, template []byte) measure.Measure {
+	start := time.Now()
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Request Failed")
@@ -72,10 +81,6 @@ func sendRequest(url string, template []byte, c chan int) {
 	if err != nil {
 		fmt.Println("Failed to read body")
 	}
-	if body != nil {
-		fmt.Printf("%s", body)
-	}
-	c <- resp.StatusCode
-
-	//"{\"firstname\":\"[firstname]\",\"lastname\":\"[lastname]\",\"age\":[number]}"
+	end := time.Now()
+	return measure.Create(start, end, resp.StatusCode, body)
 }
