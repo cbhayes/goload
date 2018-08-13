@@ -14,7 +14,7 @@
 
 package main
 
-import (	
+import (
 	"github.com/conchuirh/goload/cmd"
 )
 

@@ -16,15 +16,16 @@ package cmd
 
 import (
 	"fmt"
-	"net/http"
 	"io/ioutil"
+	"net/http"
 	"time"
 
 	"github.com/conchuirh/goload/measure"
+	"github.com/conchuirh/goload/template"
 	"github.com/spf13/cobra"
 )
 
-var template *string
+var templateString *string
 var numRequests *int
 var numClients *int
 
@@ -47,18 +48,21 @@ will send 2000 GET requests each for 10 clients to http://example.com/path`,
 			go createClient(client, *numRequests, urlString, c)
 		}
 
+		measures := make([]measure.Measure, *numRequests**numClients)
 		for i := *numRequests * *numClients; i > 0; i-- {
-			<-c				
+			measures[i-1] = <-c
 		}
+
+		measure.Stats(&measures)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(getCmd)
 
-	template = getCmd.Flags().StringP("template", "t", "", "Path to template file")
-	numRequests = getCmd.Flags().IntP("numRequests", "n",10, "Number of requests to send")
-	numClients = getCmd.Flags().IntP("numClients",  "c",1, "Number of clients to send from")
+	templateString = getCmd.Flags().StringP("template", "t", "", "Path to template file")
+	numRequests = getCmd.Flags().IntP("numRequests", "n", 10, "Number of requests to send")
+	numClients = getCmd.Flags().IntP("numClients", "c", 1, "Number of clients to send from")
 }
 
 func createClient(client int, numReq int, url string, c chan measure.Measure) {
@@ -70,9 +74,9 @@ func createClient(client int, numReq int, url string, c chan measure.Measure) {
 	return
 }
 
-func sendRequest(url string, template []byte) measure.Measure {
+func sendRequest(url string, templateBytes []byte) measure.Measure {
 	start := time.Now()
-	resp, err := http.Get(url)
+	resp, err := http.Get(template.Build(url))
 	if err != nil {
 		fmt.Println("Request Failed")
 	}
