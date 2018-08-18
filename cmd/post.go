@@ -38,7 +38,4 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(postCmd)
 
-	//template = getCmd.Flags().StringP("template", "t", "", "Path to template file")
-	//numRequests = getCmd.Flags().IntP("numRequests", "n",10, "Number of requests to send")
-	//numClients = getCmd.Flags().IntP("numClients",  "c",1, "Number of clients to send from")
 }
